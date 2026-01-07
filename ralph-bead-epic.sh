@@ -6,7 +6,9 @@
 #
 # Beads: https://github.com/steveyegge/beads
 #
-# Usage: ./ralph-bead-epic.sh <max-iterations> <epic-id>
+# Usage: ./ralph-bead-epic.sh <max-iterations> [epic-id]
+#
+# If epic-id is omitted, automatically selects the highest priority ready epic.
 #
 # Prerequisites:
 # - Claude CLI installed
@@ -14,17 +16,29 @@
 
 set -e
 
-if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 <iterations> <epic-id>"
+if [ -z "$1" ]; then
+    echo "Usage: $0 <iterations> [epic-id]"
     echo ""
     echo "Examples:"
     echo "  $0 20 bd-a3f8          # Complete up to 20 tasks in epic bd-a3f8"
     echo "  $0 50 bd-c7e2          # Complete up to 50 tasks in epic bd-c7e2"
+    echo "  $0 30                  # Auto-select highest priority ready epic"
     exit 1
 fi
 
 MAX_ITERATIONS=$1
-EPIC_ID="$2"
+
+if [ -z "$2" ]; then
+    echo "No epic specified, finding highest priority ready epic..."
+    EPIC_ID=$(bd ready --type=epic --limit=1 --sort=priority --json 2>/dev/null | jq -r '.[0].id // empty')
+    if [ -z "$EPIC_ID" ]; then
+        echo "Error: No ready epics found. Create one with: bd create --type=epic --title=\"...\""
+        exit 1
+    fi
+    echo "Selected: $EPIC_ID"
+else
+    EPIC_ID="$2"
+fi
 
 echo "Starting Ralph loop for Beads epic..."
 echo "Max iterations: $MAX_ITERATIONS"
