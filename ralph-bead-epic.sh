@@ -55,6 +55,7 @@ RULES:
 - Always leave tests passing.
 - Only work on tasks under epic $EPIC_ID.
 - Use bd commands directly (bd ready, bd show, bd done, bd note, bd block).
+- Always run bd note after completing a task - this is required, not optional.
 - Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks for this epic.
 ")
 
