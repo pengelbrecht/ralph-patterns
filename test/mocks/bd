@@ -1,0 +1,59 @@
+#!/bin/bash
+# Mock bd CLI for testing
+# Behavior controlled by MOCK_BD_* env vars
+
+# Log the call for verification
+echo "bd $*" >> "${MOCK_LOG_FILE:-/dev/null}"
+
+# Track epic calls to simulate "no more epics" after first
+EPIC_CALL_FILE="${BATS_TEST_TMPDIR:-/tmp}/bd_epic_calls"
+
+case "$1" in
+    ready)
+        if [[ "$*" == *"--type=epic"* ]]; then
+            # Return mock epic for auto-select mode
+            if [ -n "$MOCK_BD_NO_EPICS" ]; then
+                echo "[]"
+            else
+                # Track calls - return empty after second call (simulates completing epics)
+                call_count=$(cat "$EPIC_CALL_FILE" 2>/dev/null || echo 0)
+                call_count=$((call_count + 1))
+                echo "$call_count" > "$EPIC_CALL_FILE"
+
+                if [ "$call_count" -le 1 ]; then
+                    echo '[{"id": "bd-test-epic", "title": "Test Epic", "priority": 2}]'
+                else
+                    # No more epics after first one completes
+                    echo "[]"
+                fi
+            fi
+        else
+            # Return mock tasks for epic
+            if [ -n "$MOCK_BD_NO_TASKS" ]; then
+                echo "No ready tasks"
+            else
+                echo "bd-test-epic.1  P2  task  Test Task 1"
+            fi
+        fi
+        ;;
+    show)
+        echo "Epic: $2"
+        echo "Title: Test Epic"
+        echo "Status: open"
+        echo "Children:"
+        echo "  bd-test-epic.1  open  Test Task 1"
+        ;;
+    close)
+        echo "Closed: $2"
+        ;;
+    comments)
+        echo "Comment added"
+        ;;
+    sync)
+        echo "Synced"
+        ;;
+    *)
+        echo "Unknown bd command: $1" >&2
+        exit 1
+        ;;
+esac

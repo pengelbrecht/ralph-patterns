@@ -1,0 +1,11 @@
+#!/bin/bash
+# Mock claude CLI for testing
+# Behavior controlled by MOCK_CLAUDE_RESPONSE env var
+
+# Log the call for verification
+echo "claude $*" >> "${MOCK_LOG_FILE:-/dev/null}"
+
+# Default: output COMPLETE signal immediately
+response="${MOCK_CLAUDE_RESPONSE:-<promise>COMPLETE</promise>}"
+
+echo "$response"

@@ -88,14 +88,30 @@ teardown_worktree() {
     # Return to main repo
     cd "$MAIN_REPO"
 
-    # Get current main branch name
-    local main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+    # Get the main branch name (try multiple methods)
+    local main_branch=""
+    # Try to get from remote HEAD
+    main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    # Fall back to checking common branch names
+    if [ -z "$main_branch" ]; then
+        if git show-ref --verify --quiet refs/heads/main; then
+            main_branch="main"
+        elif git show-ref --verify --quiet refs/heads/master; then
+            main_branch="master"
+        else
+            # Use whatever branch we were on before creating worktree
+            main_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+        fi
+    fi
 
     echo "Checking out $main_branch..."
     git checkout "$main_branch"
 
-    echo "Pulling latest changes..."
-    git pull --rebase origin "$main_branch" || true
+    # Only pull if we have a remote
+    if git remote | grep -q origin; then
+        echo "Pulling latest changes..."
+        git pull --rebase origin "$main_branch" || true
+    fi
 
     echo "Merging $branch into $main_branch..."
     if git merge --no-ff "$branch" -m "Merge ralph work from $branch"; then
@@ -109,12 +125,14 @@ teardown_worktree() {
             git commit --no-edit
         fi
 
-        # Sync beads and push
+        # Sync beads and push (only if remote exists)
         echo "Syncing beads..."
         bd sync || true
 
-        echo "Pushing to remote..."
-        git push origin "$main_branch" || echo "Warning: Push failed, manual push may be required"
+        if git remote | grep -q origin; then
+            echo "Pushing to remote..."
+            git push origin "$main_branch" || echo "Warning: Push failed, manual push may be required"
+        fi
     else
         echo "Warning: Merge failed. Branch $branch preserved for manual merge."
         echo "Worktree at $WORKTREE_DIR will be removed but branch kept."
