@@ -5,7 +5,7 @@
 # Uses the Ralph Wiggum pattern: iterate, writing ONE meaningful test per iteration,
 # until all user-facing behavior is tested.
 #
-# Usage: ./ralph-test-coverage.sh <max-iterations>
+# Usage: ./test-ralph.sh <max-iterations>
 #
 # Prerequisites:
 # - Claude CLI installed
@@ -39,6 +39,13 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
     result=$(claude --dangerously-skip-permissions --print "@$PROGRESS_FILE" "
+TEST COVERAGE RALPH - ITERATION $i of $MAX_ITERATIONS
+
+CONTEXT:
+You are running in an autonomous loop. A bash script invokes you repeatedly, once per iteration.
+Each iteration is a fresh Claude session - you have no memory of previous iterations.
+Read the progress file above to see what earlier iterations tested and learned.
+
 WHAT MAKES A GREAT TEST: \
 A great test covers behavior users depend on. It tests a feature that, if broken, would frustrate or block users. \
 It validates real workflows - not implementation details. It catches regressions before users do. \
@@ -71,6 +78,13 @@ RULES: \
 - Always append to $PROGRESS_FILE after each iteration - this is required, not optional. \
 - Output <promise>COMPLETE</promise> when ALL user-facing behavior is tested. \
   This can be 100% coverage, OR lower if remaining uncovered code has ignore comments. \
+
+AUTONOMY: \
+- You are running NON-INTERACTIVELY. Never ask questions or wait for input. \
+- Make smart autonomous decisions - install test dependencies, choose reasonable defaults. \
+- For small installs (test frameworks, coverage tools): just do it. \
+- For large installs (>1GB): output <promise>EJECT: <reason></promise> instead. \
+- If truly blocked (missing credentials, unclear requirements): output <promise>BLOCKED: <reason></promise>. \
 ")
 
     echo "$result"
@@ -86,6 +100,18 @@ RULES: \
         echo "=== Could not determine coverage command for this project ==="
         echo "Add test/coverage instructions to CLAUDE.md or configure in package.json/pyproject.toml"
         exit 1
+    fi
+
+    if [[ "$result" == *"<promise>EJECT:"* ]]; then
+        echo ""
+        echo "=== Ejected - manual intervention required ==="
+        exit 2
+    fi
+
+    if [[ "$result" == *"<promise>BLOCKED:"* ]]; then
+        echo ""
+        echo "=== Blocked - cannot proceed ==="
+        exit 3
     fi
 
     echo ""

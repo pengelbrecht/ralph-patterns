@@ -6,7 +6,7 @@
 #
 # Beads: https://github.com/steveyegge/beads
 #
-# Usage: ./ralph-bead-epic.sh <max-iterations> [epic-id]
+# Usage: ./bead-ralph.sh <max-iterations> [epic-id]
 #
 # If epic-id is omitted, automatically selects the highest priority ready epic.
 #
