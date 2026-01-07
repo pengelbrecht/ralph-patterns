@@ -4,17 +4,19 @@
 # Same as ralph-test-coverage.sh but runs Claude locally without docker sandbox.
 # Use this when you trust the codebase and want faster iteration.
 #
-# Usage: ./ralph-test-coverage-local.sh <max-iterations> [coverage-command]
+# Usage: ./ralph-test-coverage-local.sh <max-iterations>
 
 set -e
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <iterations> [coverage-command]"
+    echo "Usage: $0 <iterations>"
+    echo ""
+    echo "Claude will determine the coverage command from your project config"
+    echo "(package.json, pyproject.toml, Makefile, CLAUDE.md, etc.)"
     exit 1
 fi
 
 MAX_ITERATIONS=$1
-COVERAGE_CMD="${2:-pnpm coverage}"
 PROGRESS_FILE="@test-coverage-progress.txt"
 
 # Initialize progress file if it doesn't exist
@@ -26,7 +28,6 @@ fi
 
 echo "Starting Ralph loop for test coverage (local)..."
 echo "Max iterations: $MAX_ITERATIONS"
-echo "Coverage command: $COVERAGE_CMD"
 echo ""
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
@@ -47,14 +48,16 @@ Never mock: the code under test, internal modules, or anything that hides real b
 If you find yourself mocking extensively, the code may need refactoring, not more mocks. \
 
 PROCESS: \
-1. Run $COVERAGE_CMD to see which files have low coverage. \
-2. Read the uncovered lines and identify the most important USER-FACING FEATURE that lacks tests. \
+1. Determine how to run coverage for this project (check package.json, pyproject.toml, Makefile, CLAUDE.md, etc.). \
+   If you cannot determine the coverage command, output <promise>NO_COVERAGE_CONFIGURED</promise> and stop. \
+2. Run coverage to see which files have low coverage. \
+3. Read the uncovered lines and identify the most important USER-FACING FEATURE that lacks tests. \
    Prioritize: error handling users will hit, CLI commands, git operations, file parsing. \
    Deprioritize: internal utilities, edge cases users won't encounter, boilerplate. \
-3. Write ONE meaningful test that validates the feature works correctly for users. \
-4. Run $COVERAGE_CMD again - coverage should increase as a side effect of testing real behavior. \
-5. Commit with message: test(<file>): <describe the user behavior being tested> \
-6. Append super-concise notes to $PROGRESS_FILE: what you tested, coverage %, any learnings. \
+4. Write ONE meaningful test that validates the feature works correctly for users. \
+5. Run coverage again - coverage should increase as a side effect of testing real behavior. \
+6. Commit with message: test(<file>): <describe the user behavior being tested> \
+7. Append super-concise notes to $PROGRESS_FILE: what you tested, coverage %, any learnings. \
 
 RULES: \
 - Write ONE test per iteration. \
@@ -68,6 +71,13 @@ RULES: \
         echo ""
         echo "100% coverage reached after $i iterations!"
         exit 0
+    fi
+
+    if [[ "$result" == *"<promise>NO_COVERAGE_CONFIGURED</promise>"* ]]; then
+        echo ""
+        echo "=== Could not determine coverage command for this project ==="
+        echo "Add test/coverage instructions to CLAUDE.md or configure in package.json/pyproject.toml"
+        exit 1
     fi
 
     echo ""

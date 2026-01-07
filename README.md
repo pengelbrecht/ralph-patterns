@@ -61,22 +61,23 @@ Incrementally improves test coverage by writing ONE meaningful test per iteratio
 
 ```bash
 # With docker sandbox (safer)
-./ralph-test-coverage.sh <max-iterations> [coverage-command]
+./ralph-test-coverage.sh 50
 
 # Local version (faster)
-./ralph-test-coverage-local.sh 50 "pnpm coverage"
-./ralph-test-coverage-local.sh 50 "pytest --cov=src"
+./ralph-test-coverage-local.sh 50
 ```
 
-**Philosophy:** Don't write tests just to increase coverage. Use coverage as a guide to find untested user-facing behavior. If code isn't worth testing, mark it with ignore comments instead.
+Claude automatically detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md). If it can't determine how to run coverage, it exits early with guidance.
+
+**Philosophy:** Don't write tests just to increase coverage. Use coverage as a guide to find untested user-facing behavior. If code isn't worth testing, mark it with ignore comments instead. Mocks are a last resort—if a test fails, fix the bug, don't mock it away.
 
 ## Setup
 
 1. Copy the desired script to your project
 2. Make it executable: `chmod +x ralph-*.sh`
 3. For Beads: ensure `bd` is installed and you have tasks created
-4. For coverage: ensure your coverage command works
-5. Run with iteration limit and epic ID: `./ralph-bead-epic.sh 20 bd-a3f8`
+4. For coverage: ensure your project has coverage configured (Claude will auto-detect)
+5. Run: `./ralph-bead-epic.sh 20 bd-a3f8` or `./ralph-test-coverage-local.sh 50`
 
 ## The Promise Pattern
 
