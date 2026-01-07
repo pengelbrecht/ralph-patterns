@@ -16,13 +16,15 @@
 
 set -e
 
+SCRIPT_NAME=$(basename "$0")
+
 if [ -z "$1" ]; then
-    echo "Usage: $0 <iterations> [epic-id]"
+    echo "Usage: $SCRIPT_NAME <iterations> [epic-id]"
     echo ""
     echo "Examples:"
-    echo "  $0 20 bd-a3f8          # Complete up to 20 tasks in epic bd-a3f8"
-    echo "  $0 50 bd-c7e2          # Complete up to 50 tasks in epic bd-c7e2"
-    echo "  $0 30                  # Auto-select highest priority ready epic"
+    echo "  $SCRIPT_NAME 20 bd-a3f8    # Complete up to 20 tasks in epic bd-a3f8"
+    echo "  $SCRIPT_NAME 50 bd-c7e2    # Complete up to 50 tasks in epic bd-c7e2"
+    echo "  $SCRIPT_NAME 30            # Auto-select highest priority ready epic"
     exit 1
 fi
 

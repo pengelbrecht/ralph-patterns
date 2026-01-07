@@ -13,8 +13,10 @@
 
 set -e
 
+SCRIPT_NAME=$(basename "$0")
+
 if [ -z "$1" ]; then
-    echo "Usage: $0 <iterations>"
+    echo "Usage: $SCRIPT_NAME <iterations>"
     echo ""
     echo "Claude will determine the coverage command from your project config"
     echo "(package.json, pyproject.toml, Makefile, CLAUDE.md, etc.)"
