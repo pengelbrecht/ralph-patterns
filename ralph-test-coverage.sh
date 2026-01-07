@@ -52,6 +52,12 @@ Do NOT write tests just to increase coverage. Use coverage as a guide to find UN
 If uncovered code is not worth testing (boilerplate, unreachable error branches, internal plumbing), \
 add coverage ignore comments appropriate for this project's language instead of writing low-value tests. \
 
+MOCKS - BE SKEPTICAL: \
+Mocks are a last resort, not a first choice. If a test fails, FIX THE BUG - do not mock away the failure. \
+Only mock: external services (APIs, databases), time/randomness, or truly slow operations. \
+Never mock: the code under test, internal modules, or anything that hides real behavior. \
+If you find yourself mocking extensively, the code may need refactoring, not more mocks. \
+
 PROCESS: \
 1. Run $COVERAGE_CMD to see which files have low coverage. \
 2. Read the uncovered lines and identify the most important USER-FACING FEATURE that lacks tests. \
