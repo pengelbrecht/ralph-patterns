@@ -62,8 +62,10 @@ PROCESS: \
 5. Commit with message: test(<file>): <describe the user behavior being tested> \
 6. Append super-concise notes to $PROGRESS_FILE: what you tested, coverage %, any learnings. \
 
-ONLY WRITE ONE TEST PER ITERATION. \
-If statement coverage reaches 100%, output <promise>COMPLETE</promise>. \
+RULES: \
+- Write ONE test per iteration. \
+- Always append to $PROGRESS_FILE after each test - this is required, not optional. \
+- If statement coverage reaches 100%, output <promise>COMPLETE</promise>. \
 ")
 
     echo "$result"
