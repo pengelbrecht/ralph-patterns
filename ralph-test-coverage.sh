@@ -1,16 +1,15 @@
 #!/bin/bash
-# Ralph Pattern: Drive Test Coverage to 100%
+# Ralph Pattern: Drive Test Coverage to Completion
 #
-# This script runs Claude in an autonomous loop to incrementally improve test coverage.
+# Runs Claude in an autonomous loop to incrementally improve test coverage.
 # Uses the Ralph Wiggum pattern: iterate, writing ONE meaningful test per iteration,
-# until 100% statement coverage is reached.
+# until all user-facing behavior is tested.
 #
 # Usage: ./ralph-test-coverage.sh <max-iterations>
 #
 # Prerequisites:
-# - Claude CLI installed (or docker sandbox)
+# - Claude CLI installed
 # - Coverage tool configured in project (package.json, pyproject.toml, Makefile, etc.)
-# - @test-coverage-progress.txt for tracking progress notes
 
 set -e
 
@@ -39,8 +38,7 @@ echo ""
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-    # Use docker sandbox for safety (remove 'docker sandbox run' if running locally)
-    result=$(docker sandbox run claude --dangerously-skip-permissions "@$PROGRESS_FILE" "
+    result=$(claude --dangerously-skip-permissions --print "@$PROGRESS_FILE" "
 WHAT MAKES A GREAT TEST: \
 A great test covers behavior users depend on. It tests a feature that, if broken, would frustrate or block users. \
 It validates real workflows - not implementation details. It catches regressions before users do. \
@@ -62,21 +60,24 @@ PROCESS: \
    Prioritize: error handling users will hit, CLI commands, git operations, file parsing. \
    Deprioritize: internal utilities, edge cases users won't encounter, boilerplate. \
 4. Write ONE meaningful test that validates the feature works correctly for users. \
-5. Run coverage again - coverage should increase as a side effect of testing real behavior. \
+   OR if remaining uncovered code is not worth testing, add ignore comments and skip writing a test. \
+5. Run coverage again. \
 6. Commit with message: test(<file>): <describe the user behavior being tested> \
+   Or if only adding ignore comments: chore(<file>): mark <description> as not needing coverage \
 7. Append super-concise notes to $PROGRESS_FILE: what you tested, coverage %, any learnings. \
 
 RULES: \
-- Write ONE test per iteration. \
-- Always append to $PROGRESS_FILE after each test - this is required, not optional. \
-- If statement coverage reaches 100%, output <promise>COMPLETE</promise>. \
+- Write ONE test per iteration (or add ignore comments if code isn't worth testing). \
+- Always append to $PROGRESS_FILE after each iteration - this is required, not optional. \
+- Output <promise>COMPLETE</promise> when ALL user-facing behavior is tested. \
+  This can be 100% coverage, OR lower if remaining uncovered code has ignore comments. \
 ")
 
     echo "$result"
 
     if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
         echo ""
-        echo "100% coverage reached after $i iterations!"
+        echo "=== Coverage complete after $i iterations ==="
         exit 0
     fi
 

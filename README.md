@@ -55,19 +55,15 @@ Each iteration:
 - Claude CLI
 - Beads CLI: `brew install steveyegge/beads/beads`
 
-### 2. Test Coverage to 100% (`ralph-test-coverage.sh`)
+### 2. Test Coverage to Completion (`ralph-test-coverage.sh`)
 
 Incrementally improves test coverage by writing ONE meaningful test per iteration. Prioritizes user-facing behavior over coverage metrics.
 
 ```bash
-# With docker sandbox (safer)
 ./ralph-test-coverage.sh 50
-
-# Local version (faster)
-./ralph-test-coverage-local.sh 50
 ```
 
-Claude automatically detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md). If it can't determine how to run coverage, it exits early with guidance.
+Claude automatically detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md). Completes when all user-facing behavior is tested—this may be 100% coverage, or lower if remaining code has ignore comments.
 
 **Philosophy:** Don't write tests just to increase coverage. Use coverage as a guide to find untested user-facing behavior. If code isn't worth testing, mark it with ignore comments instead. Mocks are a last resort—if a test fails, fix the bug, don't mock it away.
 
