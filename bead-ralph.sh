@@ -8,7 +8,8 @@
 #
 # Usage: ./bead-ralph.sh <max-iterations> [epic-id]
 #
-# If epic-id is omitted, automatically selects the highest priority ready epic.
+# If epic-id is omitted, automatically selects the highest priority ready epic
+# and continues to the next epic when complete (multi-epic mode).
 #
 # Prerequisites:
 # - Claude CLI installed
@@ -24,24 +25,27 @@ if [ -z "$1" ]; then
     echo "Examples:"
     echo "  $SCRIPT_NAME 20 bd-a3f8    # Complete up to 20 tasks in epic bd-a3f8"
     echo "  $SCRIPT_NAME 50 bd-c7e2    # Complete up to 50 tasks in epic bd-c7e2"
-    echo "  $SCRIPT_NAME 30            # Auto-select highest priority ready epic"
+    echo "  $SCRIPT_NAME 30            # Auto-select epics until iterations exhausted"
     exit 1
 fi
 
 MAX_ITERATIONS=$1
+AUTO_MODE=false
 
 if [ -z "$2" ]; then
-    echo "No epic specified, finding highest priority ready epic..."
+    AUTO_MODE=true
+    echo "Auto-select mode: will continue through epics until iterations exhausted"
     EPIC_ID=$(bd ready --type=epic --limit=1 --sort=priority --json 2>/dev/null | jq -r '.[0].id // empty')
     if [ -z "$EPIC_ID" ]; then
-        echo "Error: No ready epics found. Create one with: bd create --type=epic --title=\"...\""
-        exit 1
+        echo "No ready epics found. Create one with: bd create --type=epic --title=\"...\""
+        exit 0
     fi
     echo "Selected: $EPIC_ID"
 else
     EPIC_ID="$2"
 fi
 
+echo ""
 echo "Starting Ralph loop for Beads epic..."
 echo "Max iterations: $MAX_ITERATIONS"
 echo "Epic: $EPIC_ID"
@@ -94,8 +98,21 @@ AUTONOMY:
 
     if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
         echo ""
-        echo "=== Epic completed after $i iterations ==="
-        exit 0
+        echo "=== Epic $EPIC_ID completed ==="
+
+        if [ "$AUTO_MODE" = true ]; then
+            # Find next epic
+            EPIC_ID=$(bd ready --type=epic --limit=1 --sort=priority --json 2>/dev/null | jq -r '.[0].id // empty')
+            if [ -z "$EPIC_ID" ]; then
+                echo "No more ready epics. All done!"
+                exit 0
+            fi
+            echo ""
+            echo "=== Continuing with next epic: $EPIC_ID ==="
+            echo ""
+        else
+            exit 0
+        fi
     fi
 
     if [[ "$result" == *"<promise>EJECT:"* ]]; then
