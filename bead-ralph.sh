@@ -65,23 +65,23 @@ Each iteration is a fresh Claude session - you have no memory of previous iterat
 Read the epic's comments to see what earlier iterations accomplished and learned.
 
 PROCESS:
-1. Run 'bd show $EPIC_ID' to see epic context, children status, and notes from previous iterations.
-2. Run 'bd ready --parent $EPIC_ID' to see unblocked tasks for this epic.
-3. If no tasks remain:
-   - Close the epic: bd close $EPIC_ID
-   - Output <promise>COMPLETE</promise> and stop.
-4. Pick the highest priority ready task.
-5. Implement it fully - code, tests, verification.
-6. Run tests to ensure nothing broke.
-7. Mark complete: bd close <task-id>
-8. Commit changes: git add -A && git commit -m \"feat(<task-id>): <brief description>\"
-9. Add iteration note: bd comments add $EPIC_ID \"Iteration $i: <task-id> | <what you did> | <any blockers or learnings>\"
-10. Summarize what you did.
+1. Run 'bd ready --parent $EPIC_ID' to get the list of OPEN, UNBLOCKED tasks.
+   - ONLY tasks from this output are valid to work on.
+   - If empty, close the epic with 'bd close $EPIC_ID', output <promise>COMPLETE</promise>, and stop.
+2. Run 'bd show $EPIC_ID' to read epic description and comments from previous iterations.
+3. Pick the highest priority task FROM THE bd ready OUTPUT (not from bd show).
+4. Implement it fully - code, tests, verification.
+5. Run tests to ensure nothing broke.
+6. Mark complete: bd close <task-id>
+7. Commit changes: git add -A && git commit -m \"feat(<task-id>): <brief description>\"
+8. Add iteration note: bd comments add $EPIC_ID \"Iteration $i: <task-id> | <what you did> | <any blockers or learnings>\"
+9. Summarize what you did.
 
 RULES:
 - Complete ONE task per iteration.
+- ONLY work on tasks that appear in 'bd ready' output. Never pick tasks from 'bd show' children list.
+- If a task is already closed or not in 'bd ready', skip it - do not verify or report on it.
 - Always leave tests passing.
-- Only work on tasks under epic $EPIC_ID.
 - Use bd commands directly (bd show, bd ready, bd close, bd comments add, bd update).
 - Always add a comment after completing a task - this is required, not optional.
 - Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks for this epic.
