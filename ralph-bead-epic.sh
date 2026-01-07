@@ -1,20 +1,16 @@
 #!/bin/bash
 # Ralph Pattern: Finish a Beads Epic
 #
-# This script runs Claude in an autonomous loop to complete all tasks in a Beads epic.
-# Uses the Ralph Wiggum pattern with Steve Yegge's Beads issue tracker.
+# Runs Claude in an autonomous loop to complete all tasks in a Beads epic.
+# Claude operates bd directly - the script just loops until COMPLETE.
 #
 # Beads: https://github.com/steveyegge/beads
-# - Git-backed graph issue tracker for AI agents
-# - Tasks stored in .beads/ directory as JSONL
-# - Hierarchical IDs: bd-a3f8 (epic) > bd-a3f8.1 (task) > bd-a3f8.1.1 (subtask)
 #
 # Usage: ./ralph-bead-epic.sh <max-iterations> [epic-id]
 #
 # Prerequisites:
 # - Claude CLI installed
-# - Beads CLI installed (bd): go install github.com/steveyegge/beads/cmd/bd@latest
-# - A Beads epic with tasks: bd create "Epic title" && bd create "Task" -p <epic-id>
+# - Beads CLI installed (bd)
 
 set -e
 
@@ -30,74 +26,37 @@ fi
 MAX_ITERATIONS=$1
 EPIC_ID="${2:-}"
 
-# Check if bd CLI is available
-if ! command -v bd &> /dev/null; then
-    echo "Error: Beads CLI (bd) not found."
-    echo "Install: go install github.com/steveyegge/beads/cmd/bd@latest"
-    exit 1
-fi
-
-echo "Starting Ralph loop for Beads epic completion..."
+echo "Starting Ralph loop for Beads epic..."
 echo "Max iterations: $MAX_ITERATIONS"
-if [ -n "$EPIC_ID" ]; then
-    echo "Epic filter: $EPIC_ID"
-fi
+[ -n "$EPIC_ID" ] && echo "Epic: $EPIC_ID"
 echo ""
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-    # Get ready (unblocked) tasks
-    if [ -n "$EPIC_ID" ]; then
-        READY_TASKS=$(bd ready --json 2>/dev/null | jq -r ".[] | select(.id | startswith(\"$EPIC_ID\"))" || echo "")
-    else
-        READY_TASKS=$(bd ready --json 2>/dev/null || echo "")
-    fi
-
-    # Check if any tasks remain
-    if [ -z "$READY_TASKS" ] || [ "$READY_TASKS" = "[]" ] || [ "$READY_TASKS" = "null" ]; then
-        echo ""
-        echo "=== No ready tasks remaining. Epic complete after $i iterations ==="
-        exit 0
-    fi
-
-    # Get the first ready task
-    NEXT_TASK=$(echo "$READY_TASKS" | jq -s '.[0]' 2>/dev/null || echo "$READY_TASKS" | head -1)
-
-    echo "Next task: $(echo "$NEXT_TASK" | jq -r '.id // .title // "unknown"' 2>/dev/null || echo "$NEXT_TASK")"
+    EPIC_FILTER=""
+    [ -n "$EPIC_ID" ] && EPIC_FILTER="Focus only on tasks under epic $EPIC_ID."
 
     result=$(claude --print "
-BEADS CONTEXT:
-$(bd ready)
+BEADS EPIC RALPH - ITERATION $i
 
-CURRENT TASK:
-$NEXT_TASK
+$EPIC_FILTER
 
-WHAT MAKES A GREAT BEAD: \
-A bead represents a discrete unit of user-facing value. Complete it fully before moving on. \
-Each bead should leave the codebase in a working state with passing tests. \
-Beads track dependencies - only work on unblocked tasks shown by 'bd ready'. \
+PROCESS:
+1. Run 'bd ready' to see unblocked tasks.
+2. If no tasks remain, output <promise>COMPLETE</promise> and stop.
+3. Pick the highest priority ready task.
+4. Implement it fully - code, tests, verification.
+5. Run tests to ensure nothing broke.
+6. Mark complete: bd done <task-id>
+7. Add iteration note to epic: bd note <epic-id> \"Iteration $i: <what you completed>\"
+8. Summarize what you did.
 
-PROCESS: \
-1. Review the current task details above. \
-2. Implement it fully - code, tests, and verification. \
-3. Run tests to verify nothing broke. \
-4. Mark it complete: bd done <task-id> \
-5. If this was the last task, output <promise>COMPLETE</promise>. \
-6. Otherwise, summarize what you completed. \
-
-BEADS COMMANDS: \
-- bd ready          # List unblocked tasks \
-- bd show <id>      # Show task details and history \
-- bd done <id>      # Mark task complete \
-- bd block <id>     # Mark task blocked \
-- bd note <id> msg  # Add a note to a task \
-
-RULES: \
-- Complete ONE bead per iteration. \
-- Always leave tests passing. \
-- Use bd commands to update task status. \
-- Only output COMPLETE when 'bd ready' would return empty. \
+RULES:
+- Complete ONE task per iteration.
+- Always leave tests passing.
+- Use bd commands directly (bd ready, bd show, bd done, bd note, bd block).
+- Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks.
 ")
 
     echo "$result"
@@ -109,10 +68,9 @@ RULES: \
     fi
 
     echo ""
-    sleep 2  # Brief pause between iterations
+    sleep 2
 done
 
 echo ""
 echo "=== Max iterations ($MAX_ITERATIONS) reached ==="
-echo "Run 'bd ready' to see remaining tasks."
 exit 1
