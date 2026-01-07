@@ -77,6 +77,7 @@ PROCESS: \
 
 RULES: \
 - Write ONE test per iteration (or add ignore comments if code isn't worth testing). \
+- DO NOT fix failing tests. Your job is coverage, not bug fixing. Note failures in $PROGRESS_FILE and move on. \
 - Always append to $PROGRESS_FILE after each iteration - this is required, not optional. \
 - Output <promise>COMPLETE</promise> when ALL user-facing behavior is tested. \
   This can be 100% coverage, OR lower if remaining uncovered code has ignore comments. \
