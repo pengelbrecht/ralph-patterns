@@ -44,7 +44,7 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
     # Use docker sandbox for safety (remove 'docker sandbox run' if running locally)
-    result=$(docker sandbox run claude "@$PROGRESS_FILE" "
+    result=$(docker sandbox run claude --dangerously-skip-permissions "@$PROGRESS_FILE" "
 WHAT MAKES A GREAT TEST: \
 A great test covers behavior users depend on. It tests a feature that, if broken, would frustrate or block users. \
 It validates real workflows - not implementation details. It catches regressions before users do. \
