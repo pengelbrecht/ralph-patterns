@@ -221,6 +221,9 @@ fi
 # ============================================================================
 
 if [ "$WORKTREE_MODE" = true ]; then
+    # Disable beads daemon in worktree mode to avoid cross-branch commits
+    export BEADS_NO_DAEMON=1
+
     if [ ${#EPIC_LIST[@]} -gt 1 ]; then
         WORKTREE_NAME="multi-$(date +%Y%m%d-%H%M%S)"
     elif [ ${#EPIC_LIST[@]} -eq 1 ]; then
