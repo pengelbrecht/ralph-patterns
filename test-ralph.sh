@@ -40,13 +40,20 @@ echo ""
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-    result=$(claude --dangerously-skip-permissions --print "@$PROGRESS_FILE" "
+    # Read progress file for inclusion in prompt
+    PROGRESS_CONTENT=$(cat "$PROGRESS_FILE" 2>/dev/null || echo "No progress yet")
+
+    result=$(claude --dangerously-skip-permissions --print "
 TEST COVERAGE RALPH - ITERATION $i of $MAX_ITERATIONS
+
+YOU ARE IN AUTONOMOUS MODE. Execute the process below. Do NOT ask questions. Do NOT describe files. Just DO the work.
 
 CONTEXT:
 You are running in an autonomous loop. A bash script invokes you repeatedly, once per iteration.
 Each iteration is a fresh Claude session - you have no memory of previous iterations.
-Read the progress file above to see what earlier iterations tested and learned.
+
+PREVIOUS PROGRESS (from $PROGRESS_FILE):
+$PROGRESS_CONTENT
 
 WHAT MAKES A GREAT TEST: \
 A great test covers behavior users depend on. It tests a feature that, if broken, would frustrate or block users. \
@@ -56,14 +63,14 @@ If uncovered code is not worth testing (boilerplate, unreachable error branches,
 add coverage ignore comments appropriate for this project's language instead of writing low-value tests. \
 
 MOCKS - BE SKEPTICAL: \
-Mocks are a last resort, not a first choice. If a test fails, FIX THE BUG - do not mock away the failure. \
+Mocks are a last resort, not a first choice. Do not mock away real behavior. \
 Only mock: external services (APIs, databases), time/randomness, or truly slow operations. \
 Never mock: the code under test, internal modules, or anything that hides real behavior. \
 If you find yourself mocking extensively, the code may need refactoring, not more mocks. \
 
-PROCESS: \
+PROCESS (execute immediately - do not ask questions): \
 1. Determine how to run coverage for this project (check package.json, pyproject.toml, Makefile, CLAUDE.md, etc.). \
-   If you cannot determine the coverage command, output <promise>NO_COVERAGE_CONFIGURED</promise> and stop. \
+   If this repo has no testable code or no coverage tool, output <promise>NO_COVERAGE_CONFIGURED</promise> and stop. \
 2. Run coverage to see which files have low coverage. \
 3. Read the uncovered lines and identify the most important USER-FACING FEATURE that lacks tests. \
    Prioritize: error handling users will hit, CLI commands, git operations, file parsing. \
