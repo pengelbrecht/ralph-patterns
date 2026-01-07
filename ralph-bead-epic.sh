@@ -71,6 +71,13 @@ RULES:
 - Use bd commands directly (bd ready, bd show, bd done, bd note, bd block).
 - Always run bd note after completing a task - this is required, not optional.
 - Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks for this epic.
+
+AUTONOMY:
+- You are running NON-INTERACTIVELY. Never ask questions or wait for input.
+- Make smart autonomous decisions - install dependencies, choose reasonable defaults.
+- For small installs (Go, Node, Python packages): just do it.
+- For large installs (>1GB like Xcode, Android SDK, Docker images): output <promise>EJECT: <reason></promise> instead.
+- If truly blocked (missing credentials, unclear requirements): output <promise>BLOCKED: <reason></promise>.
 ")
 
     echo "$result"
@@ -79,6 +86,18 @@ RULES:
         echo ""
         echo "=== Epic completed after $i iterations ==="
         exit 0
+    fi
+
+    if [[ "$result" == *"<promise>EJECT:"* ]]; then
+        echo ""
+        echo "=== Ejected - manual intervention required ==="
+        exit 2
+    fi
+
+    if [[ "$result" == *"<promise>BLOCKED:"* ]]; then
+        echo ""
+        echo "=== Blocked - cannot proceed ==="
+        exit 3
     fi
 
     echo ""
