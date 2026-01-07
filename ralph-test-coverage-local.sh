@@ -38,7 +38,7 @@ A great test covers behavior users depend on. It tests a feature that, if broken
 It validates real workflows - not implementation details. It catches regressions before users do. \
 Do NOT write tests just to increase coverage. Use coverage as a guide to find UNTESTED USER-FACING BEHAVIOR. \
 If uncovered code is not worth testing (boilerplate, unreachable error branches, internal plumbing), \
-add /* v8 ignore next */ or /* v8 ignore start */ comments instead of writing low-value tests. \
+add coverage ignore comments appropriate for this project's language instead of writing low-value tests. \
 
 PROCESS: \
 1. Run $COVERAGE_CMD to see which files have low coverage. \
