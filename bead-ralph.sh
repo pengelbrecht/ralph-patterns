@@ -63,7 +63,9 @@ Read the epic's comments to see what earlier iterations accomplished and learned
 PROCESS:
 1. Run 'bd show $EPIC_ID' to see epic context, children status, and notes from previous iterations.
 2. Run 'bd ready --parent $EPIC_ID' to see unblocked tasks for this epic.
-3. If no tasks remain, output <promise>COMPLETE</promise> and stop.
+3. If no tasks remain:
+   - Close the epic: bd close $EPIC_ID
+   - Output <promise>COMPLETE</promise> and stop.
 4. Pick the highest priority ready task.
 5. Implement it fully - code, tests, verification.
 6. Run tests to ensure nothing broke.
