@@ -23,70 +23,110 @@ This loop continuously re-feeds Claude the original prompt, allowing it to itera
 3. **State persists via files** - Git history, Beads tasks, and modified code carry context
 4. **Set iteration limits** - Always cap iterations to control costs
 
-## Patterns in This Repo
+## Installation
 
-### 1. Beads Epic Completion (`ralph-bead-epic.sh`)
+### Global Install (Recommended)
+
+Create symlinks in a directory on your PATH (e.g., `~/.local/bin`):
+
+```bash
+ln -sf /path/to/ralph-patterns/bead-ralph.sh ~/.local/bin/bead-ralph
+ln -sf /path/to/ralph-patterns/test-ralph.sh ~/.local/bin/test-ralph
+```
+
+Then run from any repo:
+
+```bash
+bead-ralph 20 bd-a3f8
+test-ralph 30
+```
+
+Updates to this repo are automatically reflected via symlinks.
+
+### Per-Project
+
+Copy scripts directly into your project and run locally.
+
+## Patterns
+
+### 1. Beads Epic Completion (`bead-ralph`)
 
 Autonomously completes all tasks in a [Beads](https://github.com/steveyegge/beads) epic. Uses Steve Yegge's git-backed graph issue tracker designed for AI agents.
 
-Beads stores tasks in `.beads/` as JSONL with hierarchical IDs:
-- `bd-a3f8` = Epic
-- `bd-a3f8.1` = Task
-- `bd-a3f8.1.1` = Subtask
-
 ```bash
-# Usage
-./ralph-bead-epic.sh <max-iterations> <epic-id>
+# Specify an epic
+bead-ralph 20 bd-a3f8
 
-# Examples
-./ralph-bead-epic.sh 20 bd-a3f8          # Complete up to 20 tasks in epic bd-a3f8
-./ralph-bead-epic.sh 50 bd-c7e2          # Complete up to 50 tasks in epic bd-c7e2
+# Auto-select highest priority ready epic
+bead-ralph 30
 ```
 
+**Features:**
+- Auto-selects highest priority ready (unblocked) epic if none specified
+- Reads epic context and previous iteration notes for continuity
+- Non-interactive: makes autonomous decisions, installs small dependencies
+- Ejects for large installs (>1GB), blocks on missing credentials
+
 Each iteration:
-1. Runs `bd ready` to find unblocked tasks in the epic
-2. Claude implements the highest priority task
-3. Runs tests to verify nothing broke
-4. Marks complete with `bd done <id>`
-5. Commits with `feat(<task-id>): <description>`
-6. Repeats until no ready tasks remain
+1. Reads epic context with `bd show` (description, status, previous notes)
+2. Finds unblocked tasks with `bd ready --parent <epic>`
+3. Implements the highest priority task
+4. Runs tests to verify nothing broke
+5. Marks complete with `bd close <id>`
+6. Commits with `feat(<task-id>): <description>`
+7. Adds iteration note to epic for future iterations
+8. Repeats until no ready tasks remain
 
 **Prerequisites:**
-- Claude CLI
+- Claude CLI: `brew install claude`
 - Beads CLI: `brew install steveyegge/beads/beads`
 
-### 2. Test Coverage to Completion (`ralph-test-coverage.sh`)
+### 2. Test Coverage (`test-ralph`)
 
 Incrementally improves test coverage by writing ONE meaningful test per iteration. Prioritizes user-facing behavior over coverage metrics.
 
 ```bash
-./ralph-test-coverage.sh 50
+test-ralph 50
 ```
 
-Claude automatically detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md). Completes when all user-facing behavior is tested—this may be 100% coverage, or lower if remaining code has ignore comments.
+Claude auto-detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md).
 
-**Philosophy:** Don't write tests just to increase coverage. Use coverage as a guide to find untested user-facing behavior. If code isn't worth testing, mark it with ignore comments instead. Mocks are a last resort—if a test fails, fix the bug, don't mock it away.
+**Philosophy:**
+- Don't write tests just to increase coverage
+- Use coverage to find untested user-facing behavior
+- If code isn't worth testing, add ignore comments instead
+- Mocks are a last resort—if a test fails, fix the bug, don't mock it away
 
-## Setup
+**Prerequisites:**
+- Claude CLI
+- Coverage tool configured in your project
 
-1. Copy the desired script to your project
-2. Make it executable: `chmod +x ralph-*.sh`
-3. For Beads: ensure `bd` is installed and you have tasks created
-4. For coverage: ensure your project has coverage configured (Claude will auto-detect)
-5. Run: `./ralph-bead-epic.sh 20 bd-a3f8` or `./ralph-test-coverage-local.sh 50`
+## Signal Protocol
 
-## The Promise Pattern
+Scripts detect completion and errors via promise markers in Claude's output:
 
-Scripts detect completion via the `<promise>COMPLETE</promise>` marker in Claude's output. When Claude determines all work is done, it outputs this marker to break the loop.
+| Signal | Meaning | Exit Code |
+|--------|---------|-----------|
+| `<promise>COMPLETE</promise>` | All work done | 0 |
+| `<promise>EJECT: reason</promise>` | Large install or manual step needed | 2 |
+| `<promise>BLOCKED: reason</promise>` | Missing credentials or unclear requirements | 3 |
+| `<promise>NO_COVERAGE_CONFIGURED</promise>` | No coverage command found (test-ralph only) | 1 |
 
-For Beads, the loop also exits when `bd ready` returns no tasks.
+## Autonomy Rules
+
+Both scripts run with `--dangerously-skip-permissions` and instruct Claude to:
+
+- **Never ask questions** - Make autonomous decisions
+- **Install small dependencies** - Go, Node, Python packages, test frameworks
+- **Eject on large installs** - Xcode, Android SDK, Docker images (>1GB)
+- **Block on true blockers** - Missing credentials, unclear requirements
 
 ## Cost Considerations
 
 Each iteration costs API tokens. A 50-iteration loop on a large codebase can cost $50-100+. Always:
 - Set conservative max iterations
 - Start small and increase as needed
-- Monitor `bd ready` or progress files to catch stuck loops
+- Monitor progress files or `bd show` to catch stuck loops
 
 ## References
 
