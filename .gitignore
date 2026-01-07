@@ -1,6 +1,9 @@
 # Local test coverage progress (the example is in examples/)
 @test-coverage-progress.txt
 
+# Ralph worktrees (parallel execution)
+.ralph-worktrees/
+
 # Environment and secrets
 .env
 .env.*
