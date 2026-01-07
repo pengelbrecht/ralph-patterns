@@ -6,7 +6,7 @@
 #
 # Beads: https://github.com/steveyegge/beads
 #
-# Usage: ./ralph-bead-epic.sh <max-iterations> [epic-id]
+# Usage: ./ralph-bead-epic.sh <max-iterations> <epic-id>
 #
 # Prerequisites:
 # - Claude CLI installed
@@ -14,49 +14,48 @@
 
 set -e
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 <iterations> [epic-id]"
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Usage: $0 <iterations> <epic-id>"
     echo ""
     echo "Examples:"
-    echo "  $0 20                  # Work on any ready task"
-    echo "  $0 20 bd-a3f8          # Work only on tasks in epic bd-a3f8"
+    echo "  $0 20 bd-a3f8          # Complete up to 20 tasks in epic bd-a3f8"
+    echo "  $0 50 bd-c7e2          # Complete up to 50 tasks in epic bd-c7e2"
     exit 1
 fi
 
 MAX_ITERATIONS=$1
-EPIC_ID="${2:-}"
+EPIC_ID="$2"
 
 echo "Starting Ralph loop for Beads epic..."
 echo "Max iterations: $MAX_ITERATIONS"
-[ -n "$EPIC_ID" ] && echo "Epic: $EPIC_ID"
+echo "Epic: $EPIC_ID"
 echo ""
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-    EPIC_FILTER=""
-    [ -n "$EPIC_ID" ] && EPIC_FILTER="Focus only on tasks under epic $EPIC_ID."
-
-    result=$(claude --print "
+    result=$(claude --dangerously-skip-permissions --print "
 BEADS EPIC RALPH - ITERATION $i
 
-$EPIC_FILTER
+Epic: $EPIC_ID
 
 PROCESS:
-1. Run 'bd ready' to see unblocked tasks.
-2. If no tasks remain, output <promise>COMPLETE</promise> and stop.
-3. Pick the highest priority ready task.
+1. Run 'bd ready' to see unblocked tasks for epic $EPIC_ID.
+2. If no tasks remain in this epic, output <promise>COMPLETE</promise> and stop.
+3. Pick the highest priority ready task from this epic.
 4. Implement it fully - code, tests, verification.
 5. Run tests to ensure nothing broke.
 6. Mark complete: bd done <task-id>
-7. Add iteration note to epic: bd note <epic-id> \"Iteration $i: <what you completed>\"
-8. Summarize what you did.
+7. Commit changes: git add -A && git commit -m \"feat(<task-id>): <brief description>\"
+8. Add iteration note: bd note $EPIC_ID \"Iteration $i: <task-id> | <what you did> | <any blockers or learnings>\"
+9. Summarize what you did.
 
 RULES:
 - Complete ONE task per iteration.
 - Always leave tests passing.
+- Only work on tasks under epic $EPIC_ID.
 - Use bd commands directly (bd ready, bd show, bd done, bd note, bd block).
-- Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks.
+- Only output <promise>COMPLETE</promise> when bd ready shows no remaining tasks for this epic.
 ")
 
     echo "$result"

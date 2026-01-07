@@ -36,22 +36,24 @@ Beads stores tasks in `.beads/` as JSONL with hierarchical IDs:
 
 ```bash
 # Usage
-./ralph-bead-epic.sh <max-iterations> [epic-id]
+./ralph-bead-epic.sh <max-iterations> <epic-id>
 
 # Examples
-./ralph-bead-epic.sh 20                  # Work on any ready task
-./ralph-bead-epic.sh 20 bd-a3f8          # Work only on tasks in epic bd-a3f8
+./ralph-bead-epic.sh 20 bd-a3f8          # Complete up to 20 tasks in epic bd-a3f8
+./ralph-bead-epic.sh 50 bd-c7e2          # Complete up to 50 tasks in epic bd-c7e2
 ```
 
 Each iteration:
-1. Runs `bd ready` to find unblocked tasks
-2. Passes task context to Claude
-3. Claude implements the task and runs `bd done <id>`
-4. Repeats until no ready tasks remain
+1. Runs `bd ready` to find unblocked tasks in the epic
+2. Claude implements the highest priority task
+3. Runs tests to verify nothing broke
+4. Marks complete with `bd done <id>`
+5. Commits with `feat(<task-id>): <description>`
+6. Repeats until no ready tasks remain
 
 **Prerequisites:**
 - Claude CLI
-- Beads CLI: `go install github.com/steveyegge/beads/cmd/bd@latest`
+- Beads CLI: `brew install steveyegge/beads/beads`
 
 ### 2. Test Coverage to 100% (`ralph-test-coverage.sh`)
 
@@ -74,7 +76,7 @@ Incrementally improves test coverage by writing ONE meaningful test per iteratio
 2. Make it executable: `chmod +x ralph-*.sh`
 3. For Beads: ensure `bd` is installed and you have tasks created
 4. For coverage: ensure your coverage command works
-5. Run with iteration limit: `./ralph-bead-epic.sh 20`
+5. Run with iteration limit and epic ID: `./ralph-bead-epic.sh 20 bd-a3f8`
 
 ## The Promise Pattern
 
