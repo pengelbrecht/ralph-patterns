@@ -21,15 +21,32 @@ This loop continuously re-feeds Claude the original prompt, allowing it to itera
 1. **Define clear completion criteria** - The agent must know when it's done
 2. **One task per iteration** - Prevents scope creep and ensures progress
 3. **State persists via files** - Git history, Beads tasks, and modified code carry context
-4. **Set iteration limits** - Always cap iterations to control costs
+4. **Set iteration limits** - Always cap iterations to stay within usage limits
+
+## What is Beads?
+
+[Beads](https://github.com/steveyegge/beads) is a git-native issue tracker designed for AI agents. Created by Steve Yegge, it solves a key problem: how do you give an AI agent persistent memory across sessions?
+
+Unlike traditional issue trackers (Jira, GitHub Issues), Beads stores issues directly in your repo as JSONL files. This means Claude can read and write tasks without API integrations—it just uses the `bd` CLI.
+
+**Key features for AI workflows:**
+
+- **Hierarchical IDs**: `bd-a3f8` (epic) → `bd-a3f8.1` (task) → `bd-a3f8.1.1` (subtask)
+- **Dependencies**: Tasks can block other tasks, modeling real-world constraints
+- **Ready queue**: `bd ready` returns only unblocked work—no manual prioritization
+- **Comments**: Notes persist context across Claude sessions (what was tried, what failed)
+- **Git-native**: Issues sync via normal git push/pull, no external service needed
+
+This makes Beads ideal for Ralph loops: Claude can pick up where it left off, see what previous iterations accomplished, and work through a dependency graph autonomously.
 
 ## Installation
 
 ### Global Install (Recommended)
 
-Create symlinks in a directory on your PATH (e.g., `~/.local/bin`):
+Clone this repo and create symlinks in a directory on your PATH:
 
 ```bash
+git clone https://github.com/pengelbrecht/ralph-patterns.git
 ln -sf /path/to/ralph-patterns/bead-ralph.sh ~/.local/bin/bead-ralph
 ln -sf /path/to/ralph-patterns/test-ralph.sh ~/.local/bin/test-ralph
 ```
@@ -51,23 +68,24 @@ Copy scripts directly into your project and run locally.
 
 ### 1. Beads Epic Completion (`bead-ralph`)
 
-Autonomously completes all tasks in a [Beads](https://github.com/steveyegge/beads) epic. Uses Steve Yegge's git-backed graph issue tracker designed for AI agents.
+Autonomously completes all tasks in a Beads epic.
 
 ```bash
-# Specify an epic
+# Complete a specific epic
 bead-ralph 20 bd-a3f8
 
-# Auto-select highest priority ready epic
-bead-ralph 30
+# Auto-select mode: work through epics until iterations exhausted
+bead-ralph 50
 ```
 
 **Features:**
-- Auto-selects highest priority ready (unblocked) epic if none specified
-- Reads epic context and previous iteration notes for continuity
-- Non-interactive: makes autonomous decisions, installs small dependencies
-- Ejects for large installs (>1GB), blocks on missing credentials
+- **Multi-epic mode**: When no epic specified, continues to next epic after completing one—perfect for overnight runs
+- **Auto-select**: Picks highest priority ready (unblocked) epic
+- **Context-aware**: Reads epic description and previous iteration notes
+- **Non-interactive**: Makes autonomous decisions, installs small dependencies
+- **Safe exits**: Ejects for large installs (>1GB), blocks on missing credentials
 
-Each iteration:
+**Each iteration:**
 1. Reads epic context with `bd show` (description, status, previous notes)
 2. Finds unblocked tasks with `bd ready --parent <epic>`
 3. Implements the highest priority task
@@ -75,10 +93,10 @@ Each iteration:
 5. Marks complete with `bd close <id>`
 6. Commits with `feat(<task-id>): <description>`
 7. Adds iteration note to epic for future iterations
-8. Repeats until no ready tasks remain
+8. Closes epic and moves to next (in auto-select mode) or exits
 
 **Prerequisites:**
-- Claude CLI: `brew install claude`
+- Claude CLI
 - Beads CLI: `brew install steveyegge/beads/beads`
 
 ### 2. Test Coverage (`test-ralph`)
@@ -92,10 +110,11 @@ test-ralph 50
 Claude auto-detects your coverage command from project config (package.json, pyproject.toml, Makefile, CLAUDE.md).
 
 **Philosophy:**
-- Don't write tests just to increase coverage
+- Don't write tests just to increase coverage numbers
 - Use coverage to find untested user-facing behavior
 - If code isn't worth testing, add ignore comments instead
-- Mocks are a last resort—if a test fails, fix the bug, don't mock it away
+- Mocks are a last resort—don't mock away real behavior
+- Does NOT fix failing tests—that's a separate concern
 
 **Prerequisites:**
 - Claude CLI
@@ -126,7 +145,7 @@ Both scripts run with `--dangerously-skip-permissions` and instruct Claude to:
 Most Claude Code users have a Claude Pro/Max subscription with usage limits rather than per-token costs. Still:
 - Set reasonable max iterations to avoid burning through your daily limit
 - Start small and increase as needed
-- Monitor progress files or `bd show` to catch stuck loops
+- Monitor progress with `bd show <epic>` to catch stuck loops
 
 If using API tokens directly, a 50-iteration loop on a large codebase can cost $50-100+.
 
@@ -135,4 +154,3 @@ If using API tokens directly, a 50-iteration loop on a large codebase can cost $
 - [Beads - Memory System for Coding Agents](https://github.com/steveyegge/beads)
 - [Ralph Wiggum: Autonomous Loops](https://paddo.dev/blog/ralph-wiggum-autonomous-loops/)
 - [frankbria/ralph-claude-code](https://github.com/frankbria/ralph-claude-code)
-- [VentureBeat: Ralph Wiggum in AI](https://venturebeat.com/technology/how-ralph-wiggum-went-from-the-simpsons-to-the-biggest-name-in-ai-right-now)
