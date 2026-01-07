@@ -1,65 +1,103 @@
 #!/bin/bash
-# Ralph Pattern: Finish a Bead Epic
+# Ralph Pattern: Finish a Beads Epic
 #
-# This script runs Claude in an autonomous loop to complete all tasks in an epic.
-# Uses the Ralph Wiggum pattern: iterate until COMPLETE or max iterations reached.
+# This script runs Claude in an autonomous loop to complete all tasks in a Beads epic.
+# Uses the Ralph Wiggum pattern with Steve Yegge's Beads issue tracker.
 #
-# Usage: ./ralph-bead-epic.sh <max-iterations> [progress-file]
+# Beads: https://github.com/steveyegge/beads
+# - Git-backed graph issue tracker for AI agents
+# - Tasks stored in .beads/ directory as JSONL
+# - Hierarchical IDs: bd-a3f8 (epic) > bd-a3f8.1 (task) > bd-a3f8.1.1 (subtask)
+#
+# Usage: ./ralph-bead-epic.sh <max-iterations> [epic-id]
 #
 # Prerequisites:
 # - Claude CLI installed
-# - @epic-progress.txt file with current epic status (or specify custom file)
-# - Docker sandbox recommended for safety
+# - Beads CLI installed (bd): go install github.com/steveyegge/beads/cmd/bd@latest
+# - A Beads epic with tasks: bd create "Epic title" && bd create "Task" -p <epic-id>
 
 set -e
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <iterations> [progress-file]"
+    echo "Usage: $0 <iterations> [epic-id]"
+    echo ""
+    echo "Examples:"
+    echo "  $0 20                  # Work on any ready task"
+    echo "  $0 20 bd-a3f8          # Work only on tasks in epic bd-a3f8"
     exit 1
 fi
 
 MAX_ITERATIONS=$1
-PROGRESS_FILE="${2:-@epic-progress.txt}"
+EPIC_ID="${2:-}"
 
-# Ensure progress file exists
-if [ ! -f "$PROGRESS_FILE" ]; then
-    echo "Error: Progress file '$PROGRESS_FILE' not found."
-    echo "Create it with your epic tasks, e.g.:"
-    echo ""
-    echo "  # Epic: User Authentication"
-    echo "  - [ ] Implement login endpoint"
-    echo "  - [ ] Add session management"
-    echo "  - [ ] Write integration tests"
+# Check if bd CLI is available
+if ! command -v bd &> /dev/null; then
+    echo "Error: Beads CLI (bd) not found."
+    echo "Install: go install github.com/steveyegge/beads/cmd/bd@latest"
     exit 1
 fi
 
-echo "Starting Ralph loop for epic completion..."
+echo "Starting Ralph loop for Beads epic completion..."
 echo "Max iterations: $MAX_ITERATIONS"
-echo "Progress file: $PROGRESS_FILE"
+if [ -n "$EPIC_ID" ]; then
+    echo "Epic filter: $EPIC_ID"
+fi
 echo ""
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
     echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-    result=$(claude --print "@$PROGRESS_FILE" "
+    # Get ready (unblocked) tasks
+    if [ -n "$EPIC_ID" ]; then
+        READY_TASKS=$(bd ready --json 2>/dev/null | jq -r ".[] | select(.id | startswith(\"$EPIC_ID\"))" || echo "")
+    else
+        READY_TASKS=$(bd ready --json 2>/dev/null || echo "")
+    fi
+
+    # Check if any tasks remain
+    if [ -z "$READY_TASKS" ] || [ "$READY_TASKS" = "[]" ] || [ "$READY_TASKS" = "null" ]; then
+        echo ""
+        echo "=== No ready tasks remaining. Epic complete after $i iterations ==="
+        exit 0
+    fi
+
+    # Get the first ready task
+    NEXT_TASK=$(echo "$READY_TASKS" | jq -s '.[0]' 2>/dev/null || echo "$READY_TASKS" | head -1)
+
+    echo "Next task: $(echo "$NEXT_TASK" | jq -r '.id // .title // "unknown"' 2>/dev/null || echo "$NEXT_TASK")"
+
+    result=$(claude --print "
+BEADS CONTEXT:
+$(bd ready)
+
+CURRENT TASK:
+$NEXT_TASK
+
 WHAT MAKES A GREAT BEAD: \
 A bead represents a discrete unit of user-facing value. Complete it fully before moving on. \
 Each bead should leave the codebase in a working state with passing tests. \
+Beads track dependencies - only work on unblocked tasks shown by 'bd ready'. \
 
 PROCESS: \
-1. Read the epic progress file to understand remaining tasks. \
-2. Pick the NEXT UNCOMPLETED task (marked with [ ]). \
-3. Implement it fully - code, tests, and verification. \
-4. Mark it complete in the progress file (change [ ] to [x]). \
-5. Run tests to verify nothing broke. \
-6. If ALL tasks are marked [x], output <promise>COMPLETE</promise>. \
-7. Otherwise, summarize what you completed and what's next. \
+1. Review the current task details above. \
+2. Implement it fully - code, tests, and verification. \
+3. Run tests to verify nothing broke. \
+4. Mark it complete: bd done <task-id> \
+5. If this was the last task, output <promise>COMPLETE</promise>. \
+6. Otherwise, summarize what you completed. \
+
+BEADS COMMANDS: \
+- bd ready          # List unblocked tasks \
+- bd show <id>      # Show task details and history \
+- bd done <id>      # Mark task complete \
+- bd block <id>     # Mark task blocked \
+- bd note <id> msg  # Add a note to a task \
 
 RULES: \
 - Complete ONE bead per iteration. \
 - Always leave tests passing. \
-- Update the progress file after each bead. \
-- Only output COMPLETE when genuinely done. \
+- Use bd commands to update task status. \
+- Only output COMPLETE when 'bd ready' would return empty. \
 ")
 
     echo "$result"
@@ -67,10 +105,6 @@ RULES: \
     if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
         echo ""
         echo "=== Epic completed after $i iterations ==="
-
-        # Optional: Send notification (uncomment if tt is available)
-        # tt notify "Ralph: Epic completed after $i iterations"
-
         exit 0
     fi
 
@@ -79,6 +113,6 @@ RULES: \
 done
 
 echo ""
-echo "=== Max iterations ($MAX_ITERATIONS) reached without completion ==="
-echo "Check $PROGRESS_FILE for remaining tasks."
+echo "=== Max iterations ($MAX_ITERATIONS) reached ==="
+echo "Run 'bd ready' to see remaining tasks."
 exit 1
