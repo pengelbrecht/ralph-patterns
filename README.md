@@ -121,12 +121,14 @@ Both scripts run with `--dangerously-skip-permissions` and instruct Claude to:
 - **Eject on large installs** - Xcode, Android SDK, Docker images (>1GB)
 - **Block on true blockers** - Missing credentials, unclear requirements
 
-## Cost Considerations
+## Usage Considerations
 
-Each iteration costs API tokens. A 50-iteration loop on a large codebase can cost $50-100+. Always:
-- Set conservative max iterations
+Most Claude Code users have a Claude Pro/Max subscription with usage limits rather than per-token costs. Still:
+- Set reasonable max iterations to avoid burning through your daily limit
 - Start small and increase as needed
 - Monitor progress files or `bd show` to catch stuck loops
+
+If using API tokens directly, a 50-iteration loop on a large codebase can cost $50-100+.
 
 ## References
 
