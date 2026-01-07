@@ -1,0 +1,19 @@
+# Local test coverage progress (the example is in examples/)
+@test-coverage-progress.txt
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
