@@ -20,9 +20,9 @@ When operating in a Ralph loop (autonomous iteration), follow these commit conve
 
 **Examples:**
 ```bash
-git commit -m "feat(bd-a3f8.2): Add CLAUDE.md with commit guidance"
-git commit -m "fix(bd-c7e2.1): Resolve null pointer in user validation"
-git commit -m "test(bd-f4d1.3): Add coverage for edge cases in parser"
+git commit -m "feat(a3f): Add CLAUDE.md with commit guidance"
+git commit -m "fix(c7e): Resolve null pointer in user validation"
+git commit -m "test(f4d): Add coverage for edge cases in parser"
 ```
 
 ### Rules for Autonomous Commits
@@ -56,4 +56,4 @@ Each commit should:
 
 ## Issue Tracking
 
-This project uses [Beads](https://github.com/steveyegge/beads) for issue tracking. See AGENTS.md for the `bd` command reference.
+This project uses [ticks](https://github.com/pengelbrecht/ticks) for issue tracking. See AGENTS.md for the `tk` command reference.
