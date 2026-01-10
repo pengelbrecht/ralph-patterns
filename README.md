@@ -39,6 +39,30 @@ Unlike traditional issue trackers (Jira, GitHub Issues), Beads stores issues dir
 
 This makes Beads ideal for Ralph loops: Claude can pick up where it left off, see what previous iterations accomplished, and work through a dependency graph autonomously.
 
+## What is Ticks?
+
+[Ticks](https://github.com/pengelbrecht/ticks) is a simpler, multiplayer-first alternative to Beads. While Beads uses JSONL + SQLite with a background daemon, Ticks stores each issue as a plain JSON file—easy to inspect and debug.
+
+**Key differences from Beads:**
+
+| | Ticks | Beads |
+|---|---|---|
+| **Multiplayer** | Owner scoping for teams | Single-user focused |
+| **Storage** | One JSON file per issue | JSONL + SQLite |
+| **Background process** | None | Daemon required |
+| **Codebase** | ~1k lines Go | ~130k lines Go |
+
+**Key commands for AI workflows:**
+
+- `tk next` - Get the single next ready task
+- `tk next --epic` - Get the next ready epic
+- `tk next <epic-id>` - Get next task within a specific epic
+- `tk ready` - List all ready (unblocked) tasks
+- `tk note <id> "msg"` - Add notes that persist across sessions
+- `tk close <id> --reason "..."` - Mark work complete with context
+
+Choose Ticks if you want simplicity and team support. Choose Beads if you need sub-millisecond queries on thousands of issues.
+
 ## Installation
 
 ### Global Install (Recommended)
@@ -48,6 +72,7 @@ Clone this repo and create symlinks in a directory on your PATH:
 ```bash
 git clone https://github.com/pengelbrecht/ralph-patterns.git
 ln -sf /path/to/ralph-patterns/bead-ralph.sh ~/.local/bin/bead-ralph
+ln -sf /path/to/ralph-patterns/ralph-ticker.sh ~/.local/bin/ralph-ticker
 ln -sf /path/to/ralph-patterns/test-ralph.sh ~/.local/bin/test-ralph
 ```
 
@@ -55,6 +80,7 @@ Then run from any repo:
 
 ```bash
 bead-ralph 20 bd-a3f8
+ralph-ticker 20 tick-a3f8
 test-ralph 30
 ```
 
@@ -99,7 +125,40 @@ bead-ralph 50
 - Claude CLI
 - Beads CLI: `brew install steveyegge/beads/beads`
 
-### 2. Test Coverage (`test-ralph`)
+### 2. Ticks Epic Completion (`ralph-ticker`)
+
+Autonomously completes all tasks in a Ticks epic. [Ticks](https://github.com/pengelbrecht/ticks) is a simpler, multiplayer-first alternative to Beads.
+
+```bash
+# Complete a specific epic
+ralph-ticker 20 tick-a3f8
+
+# Auto-select mode: work through epics until iterations exhausted
+ralph-ticker 50
+```
+
+**Features:**
+- **Multi-epic mode**: When no epic specified, continues to next epic after completing one
+- **Auto-select**: Uses `tk next --epic` to pick highest priority ready epic
+- **Context-aware**: Reads epic description and previous iteration notes
+- **Non-interactive**: Makes autonomous decisions, installs small dependencies
+- **Safe exits**: Ejects for large installs (>1GB), blocks on missing credentials
+
+**Each iteration:**
+1. Reads epic context with `tk show` (description, status, previous notes)
+2. Finds next unblocked task with `tk next <epic>`
+3. Implements the task
+4. Runs tests to verify nothing broke
+5. Marks complete with `tk close <id> --reason "..."`
+6. Commits with `feat(<task-id>): <description>`
+7. Adds iteration note to epic for future iterations
+8. Closes epic and moves to next (in auto-select mode) or exits
+
+**Prerequisites:**
+- Claude CLI
+- Ticks CLI: `brew install pengelbrecht/tap/ticks`
+
+### 3. Test Coverage (`test-ralph`)
 
 Incrementally improves test coverage by writing ONE meaningful test per iteration. Prioritizes user-facing behavior over coverage metrics.
 
@@ -152,5 +211,6 @@ If using API tokens directly, a 50-iteration loop on a large codebase can cost $
 ## References
 
 - [Beads - Memory System for Coding Agents](https://github.com/steveyegge/beads)
+- [Ticks - Multiplayer Issue Tracker for AI Agents](https://github.com/pengelbrecht/ticks)
 - [Ralph Wiggum: Autonomous Loops](https://paddo.dev/blog/ralph-wiggum-autonomous-loops/)
 - [frankbria/ralph-claude-code](https://github.com/frankbria/ralph-claude-code)
